@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cruise xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="cruise-config.xsd" schemaVersion="90">
+  <server artifactsdir="artifacts" agentAutoRegisterKey="65f7a417-7f1b-46fd-af37-3bacb27fcfc0" commandRepositoryLocation="default" serverId="0f90d256-d58c-49ab-8f02-6f7875e9f467" />
+  <pipelines group="defaultGroup">
+    <pipeline name="ixplora-api-ci" isLocked="false">
+      <environmentvariables>
+        <variable name="PORT_TO_SERVE">
+          <value>3001</value>
+        </variable>
+        <variable name="ENVIRONMENT_TEST">
+          <value>testing</value>
+        </variable>
+        <variable name="CORS">
+          <value>true</value>
+        </variable>
+        <variable name="LOG_LEVEL">
+          <value>error</value>
+        </variable>
+        <variable name="LOGS">
+          <value>logs.log</value>
+        </variable>
+        <variable name="STG_MONGO_USER">
+          <value>ixplora</value>
+        </variable>
+        <variable name="STG_MONGO_PASSWORD">
+          <value>ixplora23</value>
+        </variable>
+        <variable name="STG_DB_HOST_IP">
+          <value>10.28.130.59</value>
+        </variable>
+        <variable name="STG_MONGO_PORT">
+          <value>27017</value>
+        </variable>
+        <variable name="STG_MONGO_DB_NAME">
+          <value>ixplora</value>
+        </variable>
+        <variable name="STG_CASSANDRA_USER">
+          <value>ixplora</value>
+        </variable>
+        <variable name="STG_CASSANDRA_PASSWORD">
+          <value>ixplora23</value>
+        </variable>
+        <variable name="STG_CASSANDRA_IP">
+          <value>10.28.130.59</value>
+        </variable>
+        <variable name="STG_CASSANDRA_PORT">
+          <value>9042</value>
+        </variable>
+        <variable name="STG_CASSANDRA_KEYSPACE">
+          <value>ixplora</value>
+        </variable>
+        <variable name="STG_SMTP_SERVER">
+          <value>smtp.gmail.com</value>
+        </variable>
+        <variable name="STG_EMAIL">
+          <value>at04.ixplora@gmail.com</value>
+        </variable>
+        <variable name="STG_EMAIL_PASSWORD">
+          <value>secretixplora</value>
+        </variable>
+        <variable name="CQRS_ENABLE">
+          <value>false</value>
+        </variable>
+        <variable name="CQRS_NUMBER_WORKERS">
+          <value>1</value>
+        </variable>
+        <variable name="CQRS_SERVICE_HOST">
+          <value>localhost</value>
+        </variable>
+        <variable name="ENVIRONMENT_PRO">
+          <value>production</value>
+        </variable>
+        <variable name="MOBILE_APP_URL">
+          <value>127.0.0.1:3002</value>
+        </variable>
+        <variable name="ENVIRONMENT_STA">
+          <value>staging</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="git@10.28.128.22:richard.severich/be-service-surveys.git" />
+      </materials>
+      <stage name="Build" artifactCleanupProhibited="true" cleanWorkingDir="true">
+        <jobs>
+          <job name="install-dependencies">
+            <tasks>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>npm install&#xD;
+npm run build-ubuntu</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="UnitTests" cleanWorkingDir="true">
+        <jobs>
+          <job name="UnitTests">
+            <tasks>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>npm install&#xD;
+npm run build-ubuntu</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>cp .env.example .env</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>sed -i "s/{PORT}/$PORT_TO_SERVE/g" .env&#xD;
+sed -i "s/{ENVIRONMENT}/$ENVIRONMENT_TEST/g" .env&#xD;
+sed -i "s/{CORS}/$CORS/g" .env&#xD;
+sed -i "s/{LOG_LEVEL}/$LOG_LEVEL/g" .env&#xD;
+sed -i "s/{LOGS}/$LOGS" .env&#xD;
+NODE_ENV=test</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <exec command="npm">
+                <arg>run</arg>
+                <arg>test</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="npm">
+                <arg>run</arg>
+                <arg>coverage</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+            <tabs>
+              <tab name="UnitTestReport" path="reports/UnitTest/report.html" />
+              <tab name="CoverageReport" path="reports/Coverage/index.html" />
+            </tabs>
+            <artifacts>
+              <artifact src="report.html" dest="reports/UnitTest" />
+              <artifact src="coverage/*" dest="reports/Coverage" />
+            </artifacts>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="CodeQuality">
+        <jobs>
+          <job name="Lint">
+            <tasks>
+              <exec command="npm">
+                <arg>run</arg>
+                <arg>lint</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Package">
+        <jobs>
+          <job name="Package">
+            <tasks>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>rm .env&#xD;
+cp .env.example .env</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>sed -i "s/{PORT}/$PORT_TO_SERVE/g" .env&#xD;
+sed -i "s/{ENVIRONMENT}/$ENVIRONMENT_STA/g" .env&#xD;
+sed -i "s/{CORS}/$CORS/g" .env&#xD;
+sed -i "s/{LOG_LEVEL}/$LOG_LEVEL/g" .env&#xD;
+sed -i "s/{LOGS}/$LOGS" .env&#xD;
+sed -i "s/{MONGO_USERNAME}/$STG_MONGO_USER/g" .env&#xD;
+sed -i "s/{MONGO_PASSWORD}/$STG_MONGO_PASSWORD/g" .env&#xD;
+sed -i "s/{MONGO_IP}/$STG_DB_HOST_IP/g" .env&#xD;
+sed -i "s/{MONGO_PORT}/$STG_MONGO_PORT/g" .env&#xD;
+sed -i "s/{MONGO_DB_NAME}/$STG_MONGO_DB_NAME/g" .env&#xD;
+sed -i "s/{CASSANDRA_USERNAME}/$STG_CASSANDRA_USER/g" .env&#xD;
+sed -i "s/{CASSANDRA_PASSWORD}/$STG_CASSANDRA_PASSWORD/g" .env&#xD;
+sed -i "s/{CASSANDRA_IP}/$STG_CASSANDRA_IP/g" .env&#xD;
+sed -i "s/{CASSANDRA_PORT}/$STG_CASSANDRA_PORT/g" .env&#xD;
+sed -i "s/{CASSANDRA_KEYSPACE}/$STG_CASSANDRA_KEYSPACE/g" .env&#xD;
+sed -i "s/{SMTP_SERVER}/$STG_SMTP_SERVER/g" .env&#xD;
+sed -i "s/{EMAIL}/$STG_EMAIL/g" .env&#xD;
+sed -i "s/{EMAIL_PASSWORD}/$STG_EMAIL_PASSWORD/g" .env&#xD;
+sed -i "s/{MOBILE_APP_URL}/$STG_MOBILE_APP_URL/g" .env&#xD;
+sed -i "s/{CQRS_HOST}/$STG_CQRS_HOST/g" .env&#xD;
+sed -i "s/{CQRS_ENABLE}/$CQRS_ENABLE/g" .env&#xD;
+sed -i "s/{CQRS_NUMBER_WORKERS}/$CQRS_NUMBER_WORKERS/g" .env&#xD;
+sed -i "s/{CQRS_SERVICE_HOST}/$CQRS_SERVICE_HOST/g" .env&#xD;
+sed -i "s/{MOBILE_APP_URL}/$MOBILE_APP_URL/g" .env</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>cp package.json build/&#xD;
+cp README.md build/&#xD;
+cp .service.info build/&#xD;
+export VERSION=$(cat package.json | jq -r .version)&#xD;
+sed -i "s/{BuildVersion}/$VERSION/g" build/.service.info&#xD;
+cp .env build/</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>tar -czf ixplora.tar.gz build/</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>echo VERIFY .ENV FILE&#xD;
+cat .env</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+            </tasks>
+            <artifacts>
+              <artifact src="ixplora.tar.gz" dest="distribution/" />
+            </artifacts>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="ixplora-api-deploy">
+      <environmentvariables>
+        <variable name="DEPLOY_SERVER_HOST">
+          <value>10.28.130.59</value>
+        </variable>
+        <variable name="DEPLOY_SERVER_USER">
+          <value>ubuntu</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <pipeline pipelineName="ixplora-api-ci" stageName="Package" />
+      </materials>
+      <stage name="deploy" cleanWorkingDir="true">
+        <jobs>
+          <job name="deploy">
+            <tasks>
+              <fetchartifact pipeline="ixplora-api-ci" stage="Package" job="Package" srcdir="distribution/">
+                <runif status="passed" />
+              </fetchartifact>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>echo CLEAN DEPLOY-SERVER&#xD;
+ssh $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST forever stopall&#xD;
+ssh $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST 'bash -s' &lt;&lt; 'ENDSSH'&#xD;
+if [ -d "build" ]; &#xD;
+then &#xD;
+rm -r build;&#xD;
+fi&#xD;
+ENDSSH&#xD;
+&#xD;
+ssh $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST 'bash -s' &lt;&lt; 'ENDSSH'&#xD;
+if [ -f "ixplora.tar.gz" ]; &#xD;
+then &#xD;
+rm -r ixplora.tar.gz;&#xD;
+fi&#xD;
+ENDSSH</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>echo ENTER DISTRIBUTION FOLDER&#xD;
+cd distribution&#xD;
+echo COPY ARTIFACT TO DEPLOY SERVER&#xD;
+scp ixplora.tar.gz $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:&#xD;
+echo DESCOMPRESS&#xD;
+ssh $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST tar xvzf ixplora.tar.gz&#xD;
+&#xD;
+ssh $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST 'bash -s' &lt;&lt; 'ENDSSH'&#xD;
+echo ENTER BUILD FOLDER&#xD;
+cd build&#xD;
+echo VERIFY .ENV FILE&#xD;
+cat .env&#xD;
+echo INSTALL DEPENCENCIES&#xD;
+npm install --production&#xD;
+echo START APPLICATION&#xD;
+sudo forever start Server.js&#xD;
+echo FOREVER LIST&#xD;
+forever list&#xD;
+ENDSSH</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="ixplora-api-acceptance">
+      <materials>
+        <git url="https://github.com/AT-04/ixplora-api-tests/" branch="develop" />
+        <pipeline pipelineName="ixplora-api-deploy" stageName="deploy" />
+      </materials>
+      <stage name="api-acceptance" cleanWorkingDir="true">
+        <jobs>
+          <job name="acceptance">
+            <environmentvariables>
+              <variable name="server_host">
+                <value>10.28.130.59</value>
+              </variable>
+              <variable name="server_port">
+                <value>3001</value>
+              </variable>
+              <variable name="mongo_host">
+                <value>10.28.130.59</value>
+              </variable>
+              <variable name="mongo_port">
+                <value>27017</value>
+              </variable>
+              <variable name="mongo_username">
+                <value>ixplora</value>
+              </variable>
+              <variable name="mongo_password">
+                <value>ixplora23</value>
+              </variable>
+              <variable name="mongo_db_name">
+                <value>ixplora</value>
+              </variable>
+              <variable name="cassandra_host">
+                <value>10.28.130.59</value>
+              </variable>
+              <variable name="cassandra_port">
+                <value>9042</value>
+              </variable>
+              <variable name="cassandra_username">
+                <value>ixplora</value>
+              </variable>
+              <variable name="cassandra_password">
+                <value>ixplora23</value>
+              </variable>
+              <variable name="cassandra_keyspace">
+                <value>ixplora</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>echo SET ENV VARIABLES&#xD;
+sed -i "s/{server_host}/$server_host/g" features/support/env.yml&#xD;
+sed -i "s/{server_port}/$server_port/g" features/support/env.yml&#xD;
+&#xD;
+sed -i "s/{mongo_host}/$mongo_host/g" features/support/env.yml&#xD;
+sed -i "s/{mongo_port}/$mongo_port/g" features/support/env.yml&#xD;
+sed -i "s/{mongo_username}/$mongo_username/g" features/support/env.yml&#xD;
+sed -i "s/{mongo_password}/$mongo_password/g" features/support/env.yml&#xD;
+sed -i "s/{mongo_db_name}/$mongo_db_name/g" features/support/env.yml&#xD;
+&#xD;
+sed -i "s/{cassandra_host}/$cassandra_host/g" features/support/env.yml&#xD;
+sed -i "s/{cassandra_port}/$cassandra_port/g" features/support/env.yml&#xD;
+sed -i "s/{cassandra_username}/$cassandra_username/g" features/support/env.yml&#xD;
+sed -i "s/{cassandra_password}/$cassandra_password/g" features/support/env.yml&#xD;
+sed -i "s/{cassandra_keyspace}/$cassandra_keyspace/g" features/support/env.yml&#xD;
+&#xD;
+cat  features/support/env.yml</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>bundle install --path vendor/bundle</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+              <task>
+                <pluginConfiguration id="script-executor" version="1" />
+                <configuration>
+                  <property>
+                    <key>script</key>
+                    <value>bundler exec rake json_report['smoke']&#xD;
+bundler exec rake html_report['smoke']</value>
+                  </property>
+                  <property>
+                    <key>shtype</key>
+                    <value>bash</value>
+                  </property>
+                </configuration>
+                <runif status="passed" />
+              </task>
+            </tasks>
+            <tabs>
+              <tab name="SmokeReports" path="reports/smoke/report_smoke.html" />
+            </tabs>
+            <artifacts>
+              <artifact src="features/reports/smoke/report_smoke.html" dest="reports/smoke/" />
+            </artifacts>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+  </pipelines>
+  <agents>
+    <agent hostname="ec303ac4797e" ipaddress="172.18.0.2" uuid="09d08090-066c-4a1c-a943-c9ad559efc7f" />
+  </agents>
+</cruise>

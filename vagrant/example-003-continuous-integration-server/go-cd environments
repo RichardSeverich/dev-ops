@@ -1,0 +1,26 @@
+sed -i "s/{PORT}/$PORT_TO_SERVE/g" .env
+sed -i "s/{ENVIRONMENT}/$ENVIRONMENT/g" .env
+sed -i "s/{CORS}/$CORS/g" .env
+sed -i "s/{LOG_LEVEL}/$LOG_LEVEL/g" .env
+sed -i "s/{LOGS}/$LOGS" .env
+
+sed -i "s/{MONGO_USERNAME}/$STG_MONGO_USER/g" .env
+sed -i "s/{MONGO_PASSWORD}/$STG_MONGO_PASSWORD/g" .env
+sed -i "s/{MONGO_IP}/$STG_DB_HOST_IP/g" .env
+sed -i "s/{MONGO_PORT}/$STG_MONGO_PORT/g" .env
+sed -i "s/{MONGO_DB_NAME}/$STG_MONGO_DB_NAME/g" .env
+
+sed -i "s/{CASSANDRA_USERNAME}/$STG_CASSANDRA_USER/g" .env
+sed -i "s/{CASSANDRA_PASSWORD}/$STG_CASSANDRA_PASSWORD/g" .env
+sed -i "s/{CASSANDRA_IP}/$STG_CASSANDRA_IP/g" .env
+sed -i "s/{CASSANDRA_PORT}/$STG_CASSANDRA_PORT/g" .env
+sed -i "s/{CASSANDRA_KEYSPACE}/$STG_CASSANDRA_KEYSPACE/g" .env
+
+sed -i "s/{SMTP_SERVER}/$STG_SMTP_SERVER/g" .env
+sed -i "s/{EMAIL}/$STG_EMAIL/g" .env
+sed -i "s/{EMAIL_PASSWORD}/$STG_EMAIL_PASSWORD/g" .env
+
+sed -i "s/{MOBILE_APP_URL}/$STG_MOBILE_APP_URL/g" .env
+sed -i "s/{CQRS_HOST}/$STG_CQRS_HOST/g" .env
+sed -i "s/{CQRS_ENABLE}/$CQRS_ENABLE/g" .env
+sed -i "s/{CQRS_NUMBER_WORKERS}/$CQRS_NUMBER_WORKERS/g" .env
