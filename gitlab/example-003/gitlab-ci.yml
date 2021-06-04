@@ -1,0 +1,72 @@
+image: node:12.19.0-buster
+
+stages:
+  - test
+  - coverage
+  - deploy
+
+before_script:
+  - npm install
+
+# TESTS STAGE FOR MERGE REQUESTS
+test_merge_requests:
+  stage: test
+  script:
+    - npm run test:report
+  only:
+    - merge_requests
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - junit.xml
+
+# COVERAGE STAGE FOR MERGE REQUESTS
+coverage_merge_requests:
+  stage: coverage
+  script:
+    - npm run test:coverage
+  only:
+    - merge_requests
+  artifacts:
+    when: always
+    paths:
+      - coverage/lcov-report
+
+# TESTS STAGE FOR DEVELOP
+test_develop:
+  stage: test
+  script:
+    - npm run test:report
+  only:
+    refs:
+      - develop
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - junit.xml
+
+# COVERAGE STAGE FOR DEVELOP
+coverage_develop:
+  stage: coverage
+  script:
+    - npm run test:coverage
+  only:
+    refs:
+      - develop
+  artifacts:
+    when: always
+    paths:
+      - coverage/lcov-report
+
+# DEPLOY TO HEROKU CLOUD
+deployment:
+  stage: deploy
+  script:
+    - apt-get update -yq
+    - apt-get install -y ruby-dev
+    - gem install dpl
+    - dpl --provider=heroku --app=resoftui --api-key={your-api-key}
+  only:
+    - develop

@@ -1,0 +1,112 @@
+image: 172.21.19.33:5000/jds-docker-compose:19-dind
+services:
+  - name: 172.21.19.33:5000/jds-docker-compose:19-dind
+    alias: docker
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  APP_VERSION: $DEFAULT_VERSION.$CI_PIPELINE_ID
+  DEFAULT_IMAGE: $DOCKER_REGISTRY/$PACKAGE_NAME/$CI_COMMIT_REF_SLUG
+  DOCKER_DRIVER: overlay2
+  ROOT_URL: $ROOT_URL
+  MONGO_URL: $MONGO_URL
+  APP_PORT: $APP_PORT
+  IP_ENVIRONMENT: $IP_ENVIRONMENT
+  EXPOSE_UI_PORT: $EXPOSE_UI_PORT
+  EXPOSE_BACKEND_PORT: $EXPOSE_BACKEND_PORT
+  MONGO_PORT: $MONGO_PORT
+  DOCKER_COMPOSE: $DOCKER_COMPOSE
+
+stages:
+  - validateCode
+  - buildAndTest
+  - buildImage
+  - deployImage
+
+validateCode:
+  stage: validateCode
+  image: 172.21.19.33:5000/jds/nickel:0.1.7
+  script:
+    - echo start validate code
+    - cd app
+    - meteor npm install
+    - npm run lint
+    - echo end validate code
+  tags:
+    - JDSIX
+
+buildAndTest:
+  stage: buildAndTest
+  before_script:
+    - cd app
+    - chmod +x wait-for-it.sh
+  script:
+    - echo start build and test
+    - rm docker-compose.yml
+    - echo "$DOCKER_COMPOSE" >> docker-compose.yml
+    - docker-compose up -d
+    - ./wait-for-it.sh -t 0 docker:4000
+    - docker-compose down
+    - echo end build and test
+  tags:
+    - JDSIX
+  except:
+    - develop
+    - master
+
+buildImage:
+  stage: buildImage
+  before_script:
+    - echo start build and test
+    - sed -i "s%current date%$(date)%g" app/Dockerfile
+    - cd app
+  script:
+    - echo start build image
+    - docker build -t $DEFAULT_IMAGE:$APP_VERSION .
+    - echo $DEFAULT_IMAGE:$APP_VERSION
+    - docker push $DEFAULT_IMAGE:$APP_VERSION
+    - echo end build image
+  tags:
+    - JDSIX
+  only:
+    - master
+    - develop
+
+deployImage:
+  stage: deployImage
+  variables:
+    DEPLOY_HOST: $DEPLOY_USER@$TEST_ENVIRONMENT
+    DEPLOY_PATH: /home/$DEPLOY_USER/consoleDeploy
+  before_script:
+    - mkdir ~/.ssh
+    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$SSH_PRIVATE_KEY")
+    - cd app
+    - mv .env.example .env
+    - sed -i "s%{MONGO_URL}%${MONGO_URL}%g" .env
+    - sed -i "s%{ROOT_URL}%${ROOT_URL}%g" .env
+    - sed -i "s%{APP_PORT}%${APP_PORT}%g" .env
+    - sed -i "s%{EXPOSE_UI_PORT}%${EXPOSE_UI_PORT}%g" .env
+    - sed -i "s%{EXPOSE_BACKEND_PORT}%${EXPOSE_BACKEND_PORT}%g" .env
+    - sed -i "s%{MONGO_PORT}%${MONGO_PORT}%g" .env
+    - sed -i "s%IMAGE_BUILD_NAME%${DEFAULT_IMAGE}:${APP_VERSION}%g" docker-compose.yml
+  script:
+    - echo Deploy in $IP_ENVIRONMENT starting
+    - ssh $DEPLOY_HOST "[ -d $DEPLOY_PATH ] || mkdir -p $DEPLOY_PATH"
+    - ssh $DEPLOY_HOST "docker pull mongo:latest"
+    - scp docker-compose.yml $DEPLOY_HOST:$DEPLOY_PATH
+    - scp .env $DEPLOY_HOST:$DEPLOY_PATH
+    - ssh $DEPLOY_HOST "cat $DEPLOY_PATH/.env"
+    - ssh $DEPLOY_HOST "cd $DEPLOY_PATH/ && docker-compose down"
+    - ssh $DEPLOY_HOST "docker image prune -a -f"
+    - ssh $DEPLOY_HOST "cd $DEPLOY_PATH/ && docker-compose up -d"
+    - echo Deploy finished
+  tags:
+    - JDSIX
+  except:
+    - master
+  only:
+    - develop
+  when: manual

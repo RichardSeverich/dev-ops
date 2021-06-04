@@ -1,0 +1,62 @@
+stages:
+  - pre-build
+  - build
+  - deploy
+
+pre-build:
+  stage: pre-build
+  script:
+    - CONTAINERS_TO_REMOVE=$(docker ps -f name=raffle -f status=running -f status=restarting --format {{.ID}})
+    - CONTAINERS_STOPED=$(docker ps -a -f name=raffle -f status=exited --format {{.ID}})
+    - if [[ ! -z ${CONTAINERS_STOPED} ]]; then docker rm ${CONTAINERS_STOPED}; fi
+    - >
+      if [[ ! -z ${CONTAINERS_TO_REMOVE} ]]
+        then
+          docker container stop ${CONTAINERS_TO_REMOVE}
+          docker container rm ${CONTAINERS_TO_REMOVE}
+      fi
+  only:
+    - develop
+    - master
+  tags:
+    - jds-raffle
+  allow_failure: true
+
+build:
+  stage: build
+  before_script:
+    - HOSTNAME=$(hostname -I | cut -d\  -f1)
+    - sed -i "s%localhost%$HOSTNAME%g" package.json
+    - sed -i "s%localhost%$HOSTNAME%g" settings.json
+    - sed -i "s%localhost%$HOSTNAME%g" docker-compose.yml
+    - sed -i "s%localhost%$HOSTNAME%g" Dockerfile
+    - sed -i "s%localhost%$HOSTNAME%g" public/.well-known/security.txt
+    - sed -i "s%current date%$(date)%g" Dockerfile
+  script:
+    - docker run --rm -i hadolint/hadolint < Dockerfile
+    - docker build -t jdsix-raffle:${METEOR_VERSION} .
+  only:
+    - develop
+    - master
+  tags:
+    - jds-raffle
+
+development:
+  stage: deploy
+  before_script:
+    - >
+      if [ $CREATE_TENANT == "YES" ]
+        then
+          sed -i "14i \ \ \ \ \ \ - TENANT_NAME=${TENANT_NAME}" docker-compose.yml 
+          sed -i "15i \ \ \ \ \ \ - TENANT_ADMIN_EMAIL=${ADMIN_EMAIL}" docker-compose.yml 
+      fi
+    - sed -i "s%localhost%$(hostname -I | cut -d\  -f1)%g" docker-compose.yml
+    - sed -i "s%raffle-version%$METEOR_VERSION%g" docker-compose.yml
+  script:
+    - docker-compose up -d
+  only:
+    - develop
+    - master
+  tags:
+    - jds-raffle
+  when: manual
